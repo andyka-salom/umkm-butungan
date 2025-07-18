@@ -60,7 +60,7 @@
         .category-total { text-align: right; margin-top: 15px; font-size: 1.2rem; font-weight: 700; }
         .category-total span { color: var(--primary-color); }
         .final-input-group { margin-top: 20px; }
-        .final-input-group label { margin-bottom: 8px; font-weight: 600; color: var(--subtle-text-color); }
+        .final-input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--subtle-text-color); }
         .final-input-group input { width: 100%; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 12px; border-radius: 8px; font-size: 1rem; outline: none; }
 
         /* Neraca */
@@ -110,6 +110,7 @@
             <button class="tab-button active" data-tab="hpp">📊 HPP</button>
             <button class="tab-button" data-tab="laba-rugi">💰 Laba Rugi</button>
             <button class="tab-button" data-tab="neraca">⚖️ Neraca</button>
+            <button class="tab-button" data-tab="arus-kas">🌊 Arus Kas</button>
         </div>
 
         <!-- Kalkulator HPP -->
@@ -289,6 +290,57 @@
             </div>
         </div>
 
+        <!-- Kalkulator Arus Kas (Sederhana) -->
+        <div id="arus-kas" class="calculator-content">
+            <div class="card">
+                <h2>Laporan Arus Kas (Sederhana)</h2>
+                <div class="date-inputs">
+                    <div class="input-group"><label for="ak-tanggal-awal">Periode Mulai</label><input type="date" id="ak-tanggal-awal"></div>
+                    <div class="input-group"><label for="ak-tanggal-akhir">Periode Selesai</label><input type="date" id="ak-tanggal-akhir"></div>
+                </div>
+                <div class="final-input-group" style="margin-bottom: 25px;">
+                    <label for="ak-saldo-awal">Saldo Kas Awal Periode</label>
+                    <input type="number" id="ak-saldo-awal" placeholder="Masukkan jumlah kas di awal periode">
+                </div>
+
+                <div class="category-section">
+                    <h3>Penerimaan Kas (Uang Masuk)</h3>
+                    <div class="item-list-container" id="kas-masuk-list"></div>
+                    <button class="add-item-btn" data-type="kas-masuk">＋ Tambah Uang Masuk</button>
+                    <div class="category-total">Total: <span id="total-kas-masuk">Rp 0</span></div>
+                </div>
+
+                <div class="category-section">
+                    <h3>Pengeluaran Kas (Uang Keluar)</h3>
+                    <div class="item-list-container" id="kas-keluar-list"></div>
+                    <button class="add-item-btn" data-type="kas-keluar">＋ Tambah Uang Keluar</button>
+                    <div class="category-total">Total: <span id="total-kas-keluar">Rp 0</span></div>
+                </div>
+                
+                <button class="action-button" data-calc="ak">Hitung Arus Kas</button>
+                <div id="ak-result-container" class="result-container" style="display:none;">
+                    <div class="report-header">
+                        <h3>Laporan Arus Kas</h3>
+                        <p class="report-business-name"></p>
+                        <div class="report-dates"><span class="report-date-periode-ak"></span></div>
+                    </div>
+                    <div class="result-grid">
+                        <div class="result-table">
+                            <table>
+                                <tr><td>(+) Total Uang Masuk</td><td id="ak-res-masuk"></td></tr>
+                                <tr><td>(-) Total Uang Keluar</td><td id="ak-res-keluar"></td></tr>
+                                <tr class="total-row"><td>Arus Kas Bersih</td><td id="ak-res-bersih"></td></tr>
+                                <tr><td>(+) Saldo Kas Awal</td><td id="ak-res-saldo-awal"></td></tr>
+                                <tr class="final-row"><td>SALDO KAS AKHIR</td><td id="ak-res-saldo-akhir"></td></tr>
+                            </table>
+                        </div>
+                        <div class="result-chart"><canvas id="akChart"></canvas></div>
+                    </div>
+                    <button class="action-button download-button" onclick="downloadReport('ak-result-container', 'laporan-arus-kas')">Unduh Laporan</button>
+                </div>
+            </div>
+        </div>
+
         <footer>
             <p>Dibuat dengan ❤️ untuk kemajuan UMKM Butungan. Didesain oleh Andyka Salom.</p>
         </footer>
@@ -297,7 +349,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- GLOBAL VARIABLES & HELPERS ---
-        let hppChart, lrChart, neracaChart;
+        let hppChart, lrChart, neracaChart, akChart;
         const chartTextColor = '#6c757d';
         const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
         const getInputValue = (id) => parseFloat(document.getElementById(id).value) || 0;
@@ -308,20 +360,20 @@
             const row = document.createElement('div');
             row.className = 'item-row';
             let innerHTML = '';
-            switch (type) {
-                case 'bahan-baku':
-                    innerHTML = `<input type="text" placeholder="Nama Bahan Baku" class="input-nama"><input type="number" placeholder="Jml" class="input-jumlah" value="1"><input type="number" placeholder="Harga Satuan" class="input-harga"><span class="subtotal">Rp 0</span>`;
-                    break;
-                case 'tenaga-kerja': case 'overhead': case 'pendapatan': case 'operasional':
-                case 'aset-lancar': case 'aset-tetap': case 'liabilitas': case 'ekuitas':
-                    const placeholders = {
-                        'tenaga-kerja': 'cth: Gaji Operator', 'overhead': 'cth: Listrik Pabrik', 'pendapatan': 'cth: Penjualan Produk A',
-                        'operasional': 'cth: Gaji Admin', 'aset-lancar': 'cth: Kas', 'aset-tetap': 'cth: Mesin Produksi',
-                        'liabilitas': 'cth: Utang Bank', 'ekuitas': 'cth: Modal Disetor'
-                    };
-                    innerHTML = `<input type="text" placeholder="${placeholders[type]}" class="input-nama"><input type="number" placeholder="Jumlah (Rp)" class="input-harga">`;
-                    break;
+            
+            const placeholders = {
+                'tenaga-kerja': 'cth: Gaji Operator', 'overhead': 'cth: Listrik Pabrik', 'pendapatan': 'cth: Penjualan Produk A',
+                'operasional': 'cth: Gaji Admin', 'aset-lancar': 'cth: Kas', 'aset-tetap': 'cth: Mesin Produksi',
+                'liabilitas': 'cth: Utang Bank', 'ekuitas': 'cth: Modal Disetor',
+                'kas-masuk': 'cth: Penjualan tunai', 'kas-keluar': 'cth: Bayar sewa, listrik'
+            };
+
+            if (type === 'bahan-baku') {
+                innerHTML = `<input type="text" placeholder="Nama Bahan Baku" class="input-nama"><input type="number" placeholder="Jml" class="input-jumlah" value="1"><input type="number" placeholder="Harga Satuan" class="input-harga"><span class="subtotal">Rp 0</span>`;
+            } else if (placeholders[type]) {
+                innerHTML = `<input type="text" placeholder="${placeholders[type]}" class="input-nama"><input type="number" placeholder="Jumlah (Rp)" class="input-harga">`;
             }
+
             row.innerHTML = `${innerHTML}<button class="remove-item-btn">×</button>`;
             return row;
         };
@@ -340,7 +392,8 @@
                     total += parseFloat(hargaInput.value) || 0;
                 }
             });
-            const totalElement = document.getElementById(containerId.replace('-list', '').replace('bahan-baku', 'total-bahan-baku').replace('tenaga-kerja', 'total-tenaga-kerja').replace('overhead', 'total-overhead').replace('pendapatan', 'total-pendapatan').replace('operasional', 'total-operasional').replace('aset-lancar', 'total-aset-lancar').replace('aset-tetap', 'total-aset-tetap').replace('liabilitas', 'total-liabilitas').replace('ekuitas', 'total-ekuitas'));
+            const totalElementId = 'total-' + containerId.replace('-list', '');
+            const totalElement = document.getElementById(totalElementId);
             if(totalElement) totalElement.textContent = formatRupiah(total);
             return total;
         };
@@ -352,8 +405,9 @@
 
             // Add initial rows
             const initialRows = {
-                'bahan-baku': 1, 'tenaga-kerja': 1, 'overhead': 1, 'pendapatan': 1,
-                'operasional': 1, 'aset-lancar': 1, 'aset-tetap': 1, 'liabilitas': 1, 'ekuitas': 1
+                'bahan-baku': 1, 'tenaga-kerja': 1, 'overhead': 1, 'pendapatan': 1, 'operasional': 1, 
+                'aset-lancar': 1, 'aset-tetap': 1, 'liabilitas': 1, 'ekuitas': 1,
+                'kas-masuk': 1, 'kas-keluar': 1
             };
             for (const type in initialRows) {
                 for (let i = 0; i < initialRows[type]; i++) {
@@ -404,6 +458,8 @@
                     if (type === 'hpp') handleCalculateHPP(reportContainer);
                     if (type === 'lr') handleCalculateLR(reportContainer);
                     if (type === 'neraca') handleCalculateNeraca(reportContainer);
+                    if (type === 'ak') handleCalculateAK(reportContainer);
+
 
                     reportContainer.style.display = 'block';
                     reportContainer.scrollIntoView({ behavior: 'smooth' });
@@ -428,7 +484,6 @@
             container.querySelector('#hpp-res-total').textContent = formatRupiah(totalHpp);
             container.querySelector('#hpp-res-unit').textContent = formatRupiah(hppPerUnit);
             
-            // Auto-fill other tabs
             document.getElementById('lr-hpp').value = totalHpp;
 
             if (hppChart) hppChart.destroy();
@@ -460,7 +515,7 @@
             if (lrChart) lrChart.destroy();
             lrChart = new Chart(document.getElementById('lrChart'), {
                 type: 'bar', data: { labels: ['Pendapatan', 'Laba Kotor', 'Laba Bersih'], datasets: [{ label: 'Ringkasan Laba', data: [totalPendapatan, labaKotor, labaBersih], backgroundColor: ['#28a745', '#ffc107', '#007bff'] }] },
-                options: { responsive: true, plugins: { legend: { display: false } } }
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: chartTextColor } }, x: { ticks: { color: chartTextColor } } } }
             });
         };
         
@@ -474,7 +529,7 @@
             
             container.querySelector('.report-date-neraca').textContent = `Per Tanggal: ${formatDate(document.getElementById('neraca-tanggal').value)}`;
             const statusDiv = container.querySelector('#neraca-res-status');
-            if (totalAset === totalLiabilitasEkuitas && totalAset > 0) {
+            if (Math.round(totalAset) === Math.round(totalLiabilitasEkuitas) && totalAset > 0) {
                 statusDiv.textContent = "SEIMBANG (BALANCE)";
                 statusDiv.className = "balance-status seimbang";
             } else {
@@ -486,17 +541,45 @@
             
             if (neracaChart) neracaChart.destroy();
             neracaChart = new Chart(document.getElementById('neracaChart'), {
+                type: 'bar', data: { labels: ['Aset', 'Liabilitas & Ekuitas'], datasets: [
+                    { label: 'Aset Lancar', data: [totalAsetLancar, 0], backgroundColor: '#007bff', stack: 'Aset' },
+                    { label: 'Aset Tetap', data: [totalAsetTetap, 0], backgroundColor: '#0056b3', stack: 'Aset' },
+                    { label: 'Liabilitas', data: [0, totalLiabilitas], backgroundColor: '#dc3545', stack: 'LiabilitasEkuitas' },
+                    { label: 'Ekuitas', data: [0, totalEkuitas], backgroundColor: '#ffc107', stack: 'LiabilitasEkuitas' }
+                ]},
+                options: { responsive: true, scales: { x: { stacked: true, ticks: {color: chartTextColor} }, y: { stacked: true, ticks: {color: chartTextColor} } }, plugins: { legend: { position: 'top', labels: {color: chartTextColor} } } }
+            });
+        };
+
+        const handleCalculateAK = (container) => {
+            const saldoAwal = getInputValue('ak-saldo-awal');
+            const totalMasuk = calculateTotals('kas-masuk-list');
+            const totalKeluar = calculateTotals('kas-keluar-list');
+            const arusKasBersih = totalMasuk - totalKeluar;
+            const saldoAkhir = saldoAwal + arusKasBersih;
+
+            container.querySelector('.report-date-periode-ak').textContent = `Periode: ${formatDate(document.getElementById('ak-tanggal-awal').value)} - ${formatDate(document.getElementById('ak-tanggal-akhir').value)}`;
+            container.querySelector('#ak-res-masuk').textContent = formatRupiah(totalMasuk);
+            container.querySelector('#ak-res-keluar').textContent = formatRupiah(totalKeluar);
+            container.querySelector('#ak-res-bersih').textContent = formatRupiah(arusKasBersih);
+            container.querySelector('#ak-res-saldo-awal').textContent = formatRupiah(saldoAwal);
+            container.querySelector('#ak-res-saldo-akhir').textContent = formatRupiah(saldoAkhir);
+
+            if (akChart) akChart.destroy();
+            akChart = new Chart(document.getElementById('akChart'), {
                 type: 'bar',
                 data: {
-                    labels: [''],
+                    labels: ['Arus Kas'],
                     datasets: [
-                        { label: 'Aset Lancar', data: [totalAsetLancar], backgroundColor: '#007bff' },
-                        { label: 'Aset Tetap', data: [totalAsetTetap], backgroundColor: '#0056b3' },
-                        { label: 'Liabilitas', data: [-totalLiabilitas], backgroundColor: '#dc3545' },
-                        { label: 'Ekuitas', data: [-totalEkuitas], backgroundColor: '#ffc107' }
+                        { label: 'Uang Masuk', data: [totalMasuk], backgroundColor: 'rgba(40, 167, 69, 0.8)'},
+                        { label: 'Uang Keluar', data: [totalKeluar], backgroundColor: 'rgba(220, 53, 69, 0.8)'}
                     ]
                 },
-                options: { indexAxis: 'y', responsive: true, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'top' } } }
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top', labels: {color: chartTextColor} } },
+                    scales: { y: { ticks: { color: chartTextColor } }, x: { ticks: { color: chartTextColor } } }
+                }
             });
         };
 
