@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Finansial Lengkap UMKM</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <style>
+        /* Variabel Warna & Reset Dasar */
+        :root {
+            --bg-color: #f4f7f6; --card-color: #ffffff; --text-color: #333333; --subtle-text-color: #6c757d;
+            --primary-color: #007BFF; --primary-hover-color: #0056b3; --input-bg: #ffffff;
+            --border-color: #dee2e6; --danger-color: #dc3545; --success-color: #28a745;
+        }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; display: flex; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 900px; }
+        
+        /* Header & Navigasi */
+        header { text-align: center; margin-bottom: 20px; }
+        header h1 { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
+        header p { font-size: 1.1rem; color: var(--subtle-text-color); }
+        .business-name-input { width: 100%; max-width: 400px; margin: 0 auto 30px auto; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; text-align: center; font-size: 1.1rem; font-weight: 600; }
+        .tabs { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; gap: 10px; }
+        .tab-button { padding: 10px 20px; cursor: pointer; background-color: var(--card-color); border: 1px solid var(--border-color); color: var(--subtle-text-color); border-radius: 50px; font-weight: 600; transition: all 0.3s ease; }
+        .tab-button.active, .tab-button:hover { background-color: var(--primary-color); color: white; border-color: var(--primary-color); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2); }
+        
+        /* Struktur Konten & Kartu */
+        .calculator-content { display: none; }
+        .calculator-content.active { display: block; }
+        .card { background-color: var(--card-color); padding: 30px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--border-color); box-shadow: 0 5px 25px rgba(0, 0, 0, 0.07); }
+        .card h2 { font-size: 1.8rem; margin-bottom: 20px; color: var(--text-color); border-bottom: 3px solid var(--primary-color); padding-bottom: 10px; display: inline-block; }
+        
+        /* Elemen Input Dinamis (Reusable) */
+        .date-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .date-inputs .input-group, .neraca-date .input-group { display: flex; flex-direction: column; }
+        .date-inputs label, .neraca-date label { margin-bottom: 8px; font-weight: 600; color: var(--subtle-text-color); }
+        .date-inputs input[type="date"], .neraca-date input[type="date"] { background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 1rem; outline: none; transition: all 0.3s ease; font-family: 'Poppins', sans-serif; }
+        .category-section { margin-bottom: 30px; padding: 20px; border: 1px solid var(--border-color); border-radius: 10px; }
+        .category-section h3 { font-size: 1.3rem; color: var(--primary-color); margin-bottom: 15px; }
+        .item-list-container { display: flex; flex-direction: column; gap: 15px; }
+        .item-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-bottom: 10px; border-bottom: 1px dashed var(--border-color); }
+        .item-row:last-child { border-bottom: none; }
+        .item-row input { background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 0.9rem; outline: none; transition: all 0.3s ease; }
+        .item-row input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); }
+        .item-row .input-nama { flex: 3; min-width: 150px; }
+        .item-row .input-jumlah { flex: 1; min-width: 80px; }
+        .item-row .input-harga { flex: 2; min-width: 120px; }
+        .item-row .subtotal { flex: 2; min-width: 130px; font-weight: 600; color: var(--subtle-text-color); }
+        .remove-item-btn { background-color: #f8d7da; color: var(--danger-color); border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.2s ease; }
+        .remove-item-btn:hover { background-color: var(--danger-color); color: white; }
+        .add-item-btn { background-color: #e2e6ea; color: var(--subtle-text-color); border: 1px dashed var(--border-color); padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; transition: all 0.2s ease; }
+        .add-item-btn:hover { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .category-total { text-align: right; margin-top: 15px; font-size: 1.2rem; font-weight: 700; }
+        .category-total span { color: var(--primary-color); }
+        .final-input-group { margin-top: 20px; }
+        .final-input-group label { margin-bottom: 8px; font-weight: 600; color: var(--subtle-text-color); }
+        .final-input-group input { width: 100%; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 12px; border-radius: 8px; font-size: 1rem; outline: none; }
+
+        /* Neraca */
+        .balance-sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .balance-status { text-align: center; margin-top: 20px; padding: 15px; border-radius: 10px; font-size: 1.2rem; font-weight: 700; }
+        .balance-status.seimbang { background-color: rgba(40, 167, 69, 0.1); color: var(--success-color); }
+        .balance-status.tidak-seimbang { background-color: rgba(220, 53, 69, 0.1); color: var(--danger-color); }
+
+        /* Tombol & Hasil */
+        .action-button { display: block; width: 100%; padding: 15px; margin-top: 30px; font-size: 1.2rem; font-weight: 700; color: white; background-color: var(--primary-color); border: none; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
+        .action-button:hover { background-color: var(--primary-hover-color); transform: scale(1.02); box-shadow: 0 5px 20px rgba(0, 123, 255, 0.3); }
+        .result-container { margin-top: 30px; padding: 25px; background-color: #f8f9fa; border-radius: 15px; border: 1px solid var(--border-color); }
+        .report-header { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .report-header h3 { font-size: 1.5rem; text-align: center; color: var(--primary-color); }
+        .report-header .report-business-name { font-size: 1.1rem; text-align: center; color: var(--subtle-text-color); margin-top: -10px; margin-bottom: 10px; }
+        .report-header .report-dates { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 0.9rem; color: var(--subtle-text-color); margin-top: 5px; }
+        .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: flex-start; }
+        .result-table table { width: 100%; border-collapse: collapse; }
+        .result-table th, .result-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .result-table th { color: var(--subtle-text-color); font-weight: 600; }
+        .result-table .total-row, .result-table .final-row { font-weight: 700; font-size: 1.1rem; }
+        .result-table .total-row td { color: var(--primary-color); border-top: 2px solid var(--primary-color); border-bottom: none !important; }
+        .result-table .final-row td { background-color: var(--primary-color); color: white; }
+        .result-chart { width: 100%; max-height: 400px; }
+        .download-button { display: inline-block; width: auto; padding: 10px 20px; margin-top: 20px; font-size: 1rem; }
+        
+        /* Footer & Responsif */
+        footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--subtle-text-color); }
+        footer a { color: var(--primary-color); text-decoration: none; font-weight: 600; }
+        @media (max-width: 768px) {
+            header h1 { font-size: 2rem; }
+            .date-inputs, .result-grid, .balance-sheet-grid { grid-template-columns: 1fr; }
+            .card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Kalkulator Finansial Lengkap UMKM</h1>
+            <p>Alat bantu pembukuan modern untuk bisnis Anda.</p>
+            <input type="text" id="business-name" class="business-name-input" placeholder="Masukkan Nama Usaha Anda">
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="hpp">📊 HPP</button>
+            <button class="tab-button" data-tab="laba-rugi">💰 Laba Rugi</button>
+            <button class="tab-button" data-tab="neraca">⚖️ Neraca</button>
+        </div>
+
+        <!-- Kalkulator HPP -->
+        <div id="hpp" class="calculator-content active">
+            <div class="card">
+                <h2>Harga Pokok Produksi (HPP)</h2>
+                <div class="date-inputs">
+                    <div class="input-group"><label for="hpp-tanggal-produksi">Tanggal Produksi</label><input type="date" id="hpp-tanggal-produksi"></div>
+                    <div class="input-group"><label for="hpp-tanggal-laporan">Tanggal Laporan</label><input type="date" id="hpp-tanggal-laporan"></div>
+                </div>
+                <div class="category-section">
+                    <h3>1. Biaya Bahan Baku</h3>
+                    <div class="item-list-container" id="bahan-baku-list"></div>
+                    <button class="add-item-btn" data-type="bahan-baku">＋ Tambah Bahan</button>
+                    <div class="category-total">Total: <span id="total-bahan-baku">Rp 0</span></div>
+                </div>
+                <div class="category-section">
+                    <h3>2. Biaya Tenaga Kerja Langsung</h3>
+                    <div class="item-list-container" id="tenaga-kerja-list"></div>
+                    <button class="add-item-btn" data-type="tenaga-kerja">＋ Tambah Pekerja</button>
+                    <div class="category-total">Total: <span id="total-tenaga-kerja">Rp 0</span></div>
+                </div>
+                <div class="category-section">
+                    <h3>3. Biaya Overhead Pabrik</h3>
+                    <div class="item-list-container" id="overhead-list"></div>
+                    <button class="add-item-btn" data-type="overhead">＋ Tambah Biaya</button>
+                    <div class="category-total">Total: <span id="total-overhead">Rp 0</span></div>
+                </div>
+                <div class="final-input-group">
+                    <label for="hpp-unit-produksi">Jumlah Unit Produksi</label>
+                    <input type="number" id="hpp-unit-produksi" placeholder="cth: 1000">
+                </div>
+                <button class="action-button" data-calc="hpp">Hitung HPP</button>
+                <div id="hpp-result-container" class="result-container" style="display:none;">
+                    <div class="report-header">
+                        <h3>Laporan Harga Pokok Produksi</h3>
+                        <p class="report-business-name"></p>
+                        <div class="report-dates">
+                            <span class="report-date-produksi"></span>
+                            <span class="report-date-laporan"></span>
+                        </div>
+                    </div>
+                    <div class="result-grid">
+                        <div class="result-table">
+                            <table>
+                                <tr><th>Komponen</th><th>Jumlah (Rp)</th></tr>
+                                <tr><td>Bahan Baku</td><td id="hpp-res-bahan"></td></tr>
+                                <tr><td>Tenaga Kerja</td><td id="hpp-res-tenaga"></td></tr>
+                                <tr><td>Overhead</td><td id="hpp-res-overhead"></td></tr>
+                                <tr class="total-row"><td>Total HPP</td><td id="hpp-res-total"></td></tr>
+                                <tr class="total-row"><td>HPP per Unit</td><td id="hpp-res-unit"></td></tr>
+                            </table>
+                        </div>
+                        <div class="result-chart"><canvas id="hppChart"></canvas></div>
+                    </div>
+                    <button class="action-button download-button" onclick="downloadReport('hpp-result-container', 'laporan-hpp')">Unduh Laporan HPP</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kalkulator Laba Rugi -->
+        <div id="laba-rugi" class="calculator-content">
+            <div class="card">
+                <h2>Laporan Laba Rugi</h2>
+                <div class="date-inputs">
+                    <div class="input-group"><label for="lr-tanggal-awal">Periode Mulai</label><input type="date" id="lr-tanggal-awal"></div>
+                    <div class="input-group"><label for="lr-tanggal-akhir">Periode Selesai</label><input type="date" id="lr-tanggal-akhir"></div>
+                </div>
+                <div class="category-section">
+                    <h3>Pendapatan</h3>
+                    <div class="item-list-container" id="pendapatan-list"></div>
+                    <button class="add-item-btn" data-type="pendapatan">＋ Tambah Pendapatan</button>
+                    <div class="category-total">Total Pendapatan: <span id="total-pendapatan">Rp 0</span></div>
+                </div>
+                <div class="category-section">
+                    <h3>Harga Pokok Penjualan (HPP)</h3>
+                    <div class="final-input-group"><label for="lr-hpp">Masukkan Total HPP untuk periode ini</label><input type="number" id="lr-hpp" placeholder="Otomatis dari tab HPP atau isi manual"></div>
+                </div>
+                <div class="category-section">
+                    <h3>Biaya Operasional</h3>
+                    <div class="item-list-container" id="operasional-list"></div>
+                    <button class="add-item-btn" data-type="operasional">＋ Tambah Biaya</button>
+                    <div class="category-total">Total Biaya Operasional: <span id="total-operasional">Rp 0</span></div>
+                </div>
+                <div class="final-input-group">
+                    <label for="lr-pajak">Pajak Penghasilan (%)</label>
+                    <input type="number" id="lr-pajak" placeholder="cth: 10 (untuk 10%)">
+                </div>
+                <button class="action-button" data-calc="lr">Hitung Laba Rugi</button>
+                <div id="lr-result-container" class="result-container" style="display:none;">
+                    <div class="report-header">
+                        <h3>Laporan Laba Rugi</h3>
+                        <p class="report-business-name"></p>
+                        <div class="report-dates"><span class="report-date-periode"></span></div>
+                    </div>
+                    <div class="result-grid">
+                        <div class="result-table">
+                            <table>
+                                <tr><td>Total Pendapatan</td><td id="lr-res-pendapatan"></td></tr>
+                                <tr><td>(-) HPP</td><td id="lr-res-hpp"></td></tr>
+                                <tr class="total-row"><td>Laba Kotor</td><td id="lr-res-kotor"></td></tr>
+                                <tr><td>(-) Biaya Operasional</td><td id="lr-res-operasional"></td></tr>
+                                <tr class="total-row"><td>Laba Sebelum Pajak (EBIT)</td><td id="lr-res-ebit"></td></tr>
+                                <tr><td>(-) Pajak</td><td id="lr-res-pajak"></td></tr>
+                                <tr class="final-row"><td>LABA BERSIH</td><td id="lr-res-bersih"></td></tr>
+                            </table>
+                        </div>
+                        <div class="result-chart"><canvas id="lrChart"></canvas></div>
+                    </div>
+                    <button class="action-button download-button" onclick="downloadReport('lr-result-container', 'laporan-laba-rugi')">Unduh Laporan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kalkulator Neraca -->
+        <div id="neraca" class="calculator-content">
+            <div class="card">
+                <h2>Neraca Keuangan</h2>
+                <div class="neraca-date">
+                    <div class="input-group"><label for="neraca-tanggal">Laporan Per Tanggal</label><input type="date" id="neraca-tanggal"></div>
+                </div>
+                <div class="balance-sheet-grid">
+                    <div class="aset-side">
+                        <h3>ASET</h3>
+                        <div class="category-section">
+                            <h4>Aset Lancar</h4>
+                            <div class="item-list-container" id="aset-lancar-list"></div>
+                            <button class="add-item-btn" data-type="aset-lancar">＋ Tambah Aset Lancar</button>
+                            <div class="category-total">Total: <span id="total-aset-lancar">Rp 0</span></div>
+                        </div>
+                        <div class="category-section">
+                            <h4>Aset Tetap</h4>
+                            <div class="item-list-container" id="aset-tetap-list"></div>
+                            <button class="add-item-btn" data-type="aset-tetap">＋ Tambah Aset Tetap</button>
+                            <div class="category-total">Total: <span id="total-aset-tetap">Rp 0</span></div>
+                        </div>
+                    </div>
+                    <div class="liabilitas-ekuitas-side">
+                        <h3>LIABILITAS & EKUITAS</h3>
+                        <div class="category-section">
+                            <h4>Liabilitas (Utang)</h4>
+                            <div class="item-list-container" id="liabilitas-list"></div>
+                            <button class="add-item-btn" data-type="liabilitas">＋ Tambah Liabilitas</button>
+                            <div class="category-total">Total: <span id="total-liabilitas">Rp 0</span></div>
+                        </div>
+                        <div class="category-section">
+                            <h4>Ekuitas (Modal)</h4>
+                            <div class="item-list-container" id="ekuitas-list"></div>
+                            <button class="add-item-btn" data-type="ekuitas">＋ Tambah Ekuitas</button>
+                            <div class="category-total">Total: <span id="total-ekuitas">Rp 0</span></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="action-button" data-calc="neraca">Cek Keseimbangan Neraca</button>
+                <div id="neraca-result-container" class="result-container" style="display:none;">
+                     <div class="report-header">
+                        <h3>Laporan Posisi Keuangan (Neraca)</h3>
+                        <p class="report-business-name"></p>
+                        <div class="report-dates"><span class="report-date-neraca"></span></div>
+                    </div>
+                    <div id="neraca-res-status" class="balance-status"></div>
+                    <div class="result-grid">
+                        <div class="result-table">
+                            <table>
+                                <tr><th>Total Aset</th><td id="neraca-res-aset"></td></tr>
+                            </table>
+                        </div>
+                        <div class="result-table">
+                            <table>
+                                <tr><th>Total Liabilitas + Ekuitas</th><td id="neraca-res-liabilitas-ekuitas"></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="result-chart" style="margin-top: 20px;"><canvas id="neracaChart"></canvas></div>
+                    <button class="action-button download-button" onclick="downloadReport('neraca-result-container', 'laporan-neraca')">Unduh Laporan</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Dibuat dengan ❤️ untuk kemajuan UMKM Butungan. Didesain oleh Andyka Salom.</p>
+        </footer>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- GLOBAL VARIABLES & HELPERS ---
+        let hppChart, lrChart, neracaChart;
+        const chartTextColor = '#6c757d';
+        const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+        const getInputValue = (id) => parseFloat(document.getElementById(id).value) || 0;
+        const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Tidak Diisi';
+
+        // --- DYNAMIC ROW CREATION ---
+        const createRow = (type) => {
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            let innerHTML = '';
+            switch (type) {
+                case 'bahan-baku':
+                    innerHTML = `<input type="text" placeholder="Nama Bahan Baku" class="input-nama"><input type="number" placeholder="Jml" class="input-jumlah" value="1"><input type="number" placeholder="Harga Satuan" class="input-harga"><span class="subtotal">Rp 0</span>`;
+                    break;
+                case 'tenaga-kerja': case 'overhead': case 'pendapatan': case 'operasional':
+                case 'aset-lancar': case 'aset-tetap': case 'liabilitas': case 'ekuitas':
+                    const placeholders = {
+                        'tenaga-kerja': 'cth: Gaji Operator', 'overhead': 'cth: Listrik Pabrik', 'pendapatan': 'cth: Penjualan Produk A',
+                        'operasional': 'cth: Gaji Admin', 'aset-lancar': 'cth: Kas', 'aset-tetap': 'cth: Mesin Produksi',
+                        'liabilitas': 'cth: Utang Bank', 'ekuitas': 'cth: Modal Disetor'
+                    };
+                    innerHTML = `<input type="text" placeholder="${placeholders[type]}" class="input-nama"><input type="number" placeholder="Jumlah (Rp)" class="input-harga">`;
+                    break;
+            }
+            row.innerHTML = `${innerHTML}<button class="remove-item-btn">×</button>`;
+            return row;
+        };
+
+        // --- AUTO-CALCULATION LOGIC ---
+        const calculateTotals = (containerId) => {
+            let total = 0;
+            document.querySelectorAll(`#${containerId} .item-row`).forEach(row => {
+                const hargaInput = row.querySelector('.input-harga');
+                const jumlahInput = row.querySelector('.input-jumlah');
+                if (jumlahInput) { // For HPP Bahan Baku
+                    const subtotal = (parseFloat(jumlahInput.value) || 0) * (parseFloat(hargaInput.value) || 0);
+                    row.querySelector('.subtotal').textContent = formatRupiah(subtotal);
+                    total += subtotal;
+                } else { // For all other simple rows
+                    total += parseFloat(hargaInput.value) || 0;
+                }
+            });
+            const totalElement = document.getElementById(containerId.replace('-list', '').replace('bahan-baku', 'total-bahan-baku').replace('tenaga-kerja', 'total-tenaga-kerja').replace('overhead', 'total-overhead').replace('pendapatan', 'total-pendapatan').replace('operasional', 'total-operasional').replace('aset-lancar', 'total-aset-lancar').replace('aset-tetap', 'total-aset-tetap').replace('liabilitas', 'total-liabilitas').replace('ekuitas', 'total-ekuitas'));
+            if(totalElement) totalElement.textContent = formatRupiah(total);
+            return total;
+        };
+        
+        // --- INITIALIZATION ---
+        const init = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]').forEach(input => input.value = today);
+
+            // Add initial rows
+            const initialRows = {
+                'bahan-baku': 1, 'tenaga-kerja': 1, 'overhead': 1, 'pendapatan': 1,
+                'operasional': 1, 'aset-lancar': 1, 'aset-tetap': 1, 'liabilitas': 1, 'ekuitas': 1
+            };
+            for (const type in initialRows) {
+                for (let i = 0; i < initialRows[type]; i++) {
+                    const list = document.getElementById(`${type}-list`);
+                    if(list) list.appendChild(createRow(type));
+                }
+            }
+
+            // Event Delegation for adding/removing items and auto-calculation
+            document.querySelector('.container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('add-item-btn')) {
+                    const type = e.target.dataset.type;
+                    document.getElementById(`${type}-list`).appendChild(createRow(type));
+                }
+                if (e.target.classList.contains('remove-item-btn')) {
+                    const itemRow = e.target.closest('.item-row');
+                    const container = itemRow.parentElement;
+                    itemRow.remove();
+                    calculateTotals(container.id);
+                }
+            });
+
+             document.querySelector('.container').addEventListener('input', (e) => {
+                if (e.target.matches('.item-row input')) {
+                    calculateTotals(e.target.closest('.item-list-container').id);
+                }
+            });
+
+            // Tab Navigation
+            document.querySelector('.tabs').addEventListener('click', e => {
+                if (e.target.classList.contains('tab-button')) {
+                    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    document.querySelectorAll('.calculator-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(e.target.dataset.tab).classList.add('active');
+                }
+            });
+
+            // Main "Calculate" button listeners
+            document.querySelectorAll('.action-button[data-calc]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.dataset.calc;
+                    const businessName = document.getElementById('business-name').value || 'Nama Usaha Anda';
+                    const reportContainer = document.getElementById(`${type}-result-container`);
+                    
+                    reportContainer.querySelector('.report-business-name').textContent = businessName;
+                    
+                    if (type === 'hpp') handleCalculateHPP(reportContainer);
+                    if (type === 'lr') handleCalculateLR(reportContainer);
+                    if (type === 'neraca') handleCalculateNeraca(reportContainer);
+
+                    reportContainer.style.display = 'block';
+                    reportContainer.scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+        };
+
+        // --- CALCULATION HANDLERS ---
+        const handleCalculateHPP = (container) => {
+            const totalBahanBaku = calculateTotals('bahan-baku-list');
+            const totalTenagaKerja = calculateTotals('tenaga-kerja-list');
+            const totalOverhead = calculateTotals('overhead-list');
+            const totalHpp = totalBahanBaku + totalTenagaKerja + totalOverhead;
+            const unitProduksi = getInputValue('hpp-unit-produksi');
+            const hppPerUnit = unitProduksi > 0 ? totalHpp / unitProduksi : 0;
+            
+            container.querySelector('.report-date-produksi').textContent = `Tgl Produksi: ${formatDate(document.getElementById('hpp-tanggal-produksi').value)}`;
+            container.querySelector('.report-date-laporan').textContent = `Tgl Laporan: ${formatDate(document.getElementById('hpp-tanggal-laporan').value)}`;
+            container.querySelector('#hpp-res-bahan').textContent = formatRupiah(totalBahanBaku);
+            container.querySelector('#hpp-res-tenaga').textContent = formatRupiah(totalTenagaKerja);
+            container.querySelector('#hpp-res-overhead').textContent = formatRupiah(totalOverhead);
+            container.querySelector('#hpp-res-total').textContent = formatRupiah(totalHpp);
+            container.querySelector('#hpp-res-unit').textContent = formatRupiah(hppPerUnit);
+            
+            // Auto-fill other tabs
+            document.getElementById('lr-hpp').value = totalHpp;
+
+            if (hppChart) hppChart.destroy();
+            hppChart = new Chart(document.getElementById('hppChart'), {
+                type: 'doughnut', data: { labels: ['Bahan Baku', 'Tenaga Kerja', 'Overhead'], datasets: [{ data: [totalBahanBaku, totalTenagaKerja, totalOverhead], backgroundColor: ['#007bff', '#28a745', '#ffc107'] }] },
+                options: { responsive: true, plugins: { legend: { position: 'top', labels: {color: chartTextColor} } } }
+            });
+        };
+
+        const handleCalculateLR = (container) => {
+            const totalPendapatan = calculateTotals('pendapatan-list');
+            const totalOperasional = calculateTotals('operasional-list');
+            const hpp = getInputValue('lr-hpp');
+            const pajakPersen = getInputValue('lr-pajak');
+            const labaKotor = totalPendapatan - hpp;
+            const labaEbit = labaKotor - totalOperasional;
+            const nilaiPajak = labaEbit > 0 ? (labaEbit * pajakPersen) / 100 : 0;
+            const labaBersih = labaEbit - nilaiPajak;
+
+            container.querySelector('.report-date-periode').textContent = `Periode: ${formatDate(document.getElementById('lr-tanggal-awal').value)} - ${formatDate(document.getElementById('lr-tanggal-akhir').value)}`;
+            container.querySelector('#lr-res-pendapatan').textContent = formatRupiah(totalPendapatan);
+            container.querySelector('#lr-res-hpp').textContent = formatRupiah(hpp);
+            container.querySelector('#lr-res-kotor').textContent = formatRupiah(labaKotor);
+            container.querySelector('#lr-res-operasional').textContent = formatRupiah(totalOperasional);
+            container.querySelector('#lr-res-ebit').textContent = formatRupiah(labaEbit);
+            container.querySelector('#lr-res-pajak').textContent = `${formatRupiah(nilaiPajak)} (${pajakPersen}%)`;
+            container.querySelector('#lr-res-bersih').textContent = formatRupiah(labaBersih);
+
+            if (lrChart) lrChart.destroy();
+            lrChart = new Chart(document.getElementById('lrChart'), {
+                type: 'bar', data: { labels: ['Pendapatan', 'Laba Kotor', 'Laba Bersih'], datasets: [{ label: 'Ringkasan Laba', data: [totalPendapatan, labaKotor, labaBersih], backgroundColor: ['#28a745', '#ffc107', '#007bff'] }] },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        };
+        
+        const handleCalculateNeraca = (container) => {
+            const totalAsetLancar = calculateTotals('aset-lancar-list');
+            const totalAsetTetap = calculateTotals('aset-tetap-list');
+            const totalLiabilitas = calculateTotals('liabilitas-list');
+            const totalEkuitas = calculateTotals('ekuitas-list');
+            const totalAset = totalAsetLancar + totalAsetTetap;
+            const totalLiabilitasEkuitas = totalLiabilitas + totalEkuitas;
+            
+            container.querySelector('.report-date-neraca').textContent = `Per Tanggal: ${formatDate(document.getElementById('neraca-tanggal').value)}`;
+            const statusDiv = container.querySelector('#neraca-res-status');
+            if (totalAset === totalLiabilitasEkuitas && totalAset > 0) {
+                statusDiv.textContent = "SEIMBANG (BALANCE)";
+                statusDiv.className = "balance-status seimbang";
+            } else {
+                statusDiv.textContent = "TIDAK SEIMBANG";
+                statusDiv.className = "balance-status tidak-seimbang";
+            }
+            container.querySelector('#neraca-res-aset').textContent = formatRupiah(totalAset);
+            container.querySelector('#neraca-res-liabilitas-ekuitas').textContent = formatRupiah(totalLiabilitasEkuitas);
+            
+            if (neracaChart) neracaChart.destroy();
+            neracaChart = new Chart(document.getElementById('neracaChart'), {
+                type: 'bar',
+                data: {
+                    labels: [''],
+                    datasets: [
+                        { label: 'Aset Lancar', data: [totalAsetLancar], backgroundColor: '#007bff' },
+                        { label: 'Aset Tetap', data: [totalAsetTetap], backgroundColor: '#0056b3' },
+                        { label: 'Liabilitas', data: [-totalLiabilitas], backgroundColor: '#dc3545' },
+                        { label: 'Ekuitas', data: [-totalEkuitas], backgroundColor: '#ffc107' }
+                    ]
+                },
+                options: { indexAxis: 'y', responsive: true, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'top' } } }
+            });
+        };
+
+        // --- DOWNLOAD FUNCTION ---
+        window.downloadReport = (elementId, reportName) => {
+            const reportElement = document.getElementById(elementId);
+            const businessName = document.getElementById('business-name').value.replace(/ /g, '_') || 'Usaha';
+            const date = new Date().toISOString().split('T')[0];
+            const dynamicFilename = `${reportName}_${businessName}_${date}.png`;
+            html2canvas(reportElement, { backgroundColor: '#ffffff', scale: 2 })
+                .then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = dynamicFilename;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+        };
+
+        // Mulai aplikasi
+        init();
+    });
+    </script>
+</body>
+</html>
