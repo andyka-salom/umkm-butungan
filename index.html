@@ -49,10 +49,14 @@
         .item-row:last-child { border-bottom: none; }
         .item-row input { background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 0.9rem; outline: none; transition: all 0.3s ease; }
         .item-row input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); }
-        .item-row .input-nama { flex: 3; min-width: 150px; }
-        .item-row .input-jumlah { flex: 1; min-width: 80px; }
-        .item-row .input-harga { flex: 2; min-width: 120px; }
-        .item-row .subtotal { flex: 2; min-width: 130px; font-weight: 600; color: var(--subtle-text-color); }
+        
+        /* --- MODIFIKASI CSS UNTUK KOLOM SATUAN --- */
+        .item-row .input-nama { flex: 3; min-width: 140px; }
+        .item-row .input-jumlah { flex: 1; min-width: 70px; }
+        .item-row .input-satuan { flex: 1; min-width: 60px; } /* BARU */
+        .item-row .input-harga { flex: 2; min-width: 110px; }
+        .item-row .subtotal { flex: 2; min-width: 120px; font-weight: 600; color: var(--subtle-text-color); }
+
         .remove-item-btn { background-color: #f8d7da; color: var(--danger-color); border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.2s ease; }
         .remove-item-btn:hover { background-color: var(--danger-color); color: white; }
         .add-item-btn { background-color: #e2e6ea; color: var(--subtle-text-color); border: 1px dashed var(--border-color); padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; transition: all 0.2s ease; }
@@ -290,7 +294,7 @@
         </div>
 
         <footer>
-            <p>Dibuat dengan ❤️ untuk kemajuan UMKM Butungan. Didesain oleh Andyka Salom.</p>
+            <p>Dibuat dengan ❤️ untuk kemajuan UMKM Indonesia. Didesain oleh Model AI.</p>
         </footer>
     </div>
 
@@ -310,7 +314,12 @@
             let innerHTML = '';
             switch (type) {
                 case 'bahan-baku':
-                    innerHTML = `<input type="text" placeholder="Nama Bahan Baku" class="input-nama"><input type="number" placeholder="Jml" class="input-jumlah" value="1"><input type="number" placeholder="Harga Satuan" class="input-harga"><span class="subtotal">Rp 0</span>`;
+                    // --- MODIFIKASI JAVASCRIPT UNTUK MENAMBAHKAN INPUT SATUAN ---
+                    innerHTML = `<input type="text" placeholder="Nama Bahan Baku" class="input-nama">
+                                 <input type="number" placeholder="Jumlah" class="input-jumlah" value="1">
+                                 <input type="text" placeholder="cth: kg" class="input-satuan">
+                                 <input type="number" placeholder="Harga/Satuan" class="input-harga">
+                                 <span class="subtotal">Rp 0</span>`;
                     break;
                 case 'tenaga-kerja': case 'overhead': case 'pendapatan': case 'operasional':
                 case 'aset-lancar': case 'aset-tetap': case 'liabilitas': case 'ekuitas':
@@ -332,15 +341,17 @@
             document.querySelectorAll(`#${containerId} .item-row`).forEach(row => {
                 const hargaInput = row.querySelector('.input-harga');
                 const jumlahInput = row.querySelector('.input-jumlah');
-                if (jumlahInput) { // For HPP Bahan Baku
+                // Pengecekan tidak perlu diubah karena satuan hanya deskriptif
+                if (jumlahInput) { 
                     const subtotal = (parseFloat(jumlahInput.value) || 0) * (parseFloat(hargaInput.value) || 0);
                     row.querySelector('.subtotal').textContent = formatRupiah(subtotal);
                     total += subtotal;
-                } else { // For all other simple rows
+                } else {
                     total += parseFloat(hargaInput.value) || 0;
                 }
             });
-            const totalElement = document.getElementById(containerId.replace('-list', '').replace('bahan-baku', 'total-bahan-baku').replace('tenaga-kerja', 'total-tenaga-kerja').replace('overhead', 'total-overhead').replace('pendapatan', 'total-pendapatan').replace('operasional', 'total-operasional').replace('aset-lancar', 'total-aset-lancar').replace('aset-tetap', 'total-aset-tetap').replace('liabilitas', 'total-liabilitas').replace('ekuitas', 'total-ekuitas'));
+            const totalElementId = containerId.replace('-list', '').replace(/^(.*?)(-|$)/, 'total-$1');
+            const totalElement = document.getElementById(totalElementId);
             if(totalElement) totalElement.textContent = formatRupiah(total);
             return total;
         };
@@ -350,19 +361,15 @@
             const today = new Date().toISOString().split('T')[0];
             document.querySelectorAll('input[type="date"]').forEach(input => input.value = today);
 
-            // Add initial rows
             const initialRows = {
                 'bahan-baku': 1, 'tenaga-kerja': 1, 'overhead': 1, 'pendapatan': 1,
                 'operasional': 1, 'aset-lancar': 1, 'aset-tetap': 1, 'liabilitas': 1, 'ekuitas': 1
             };
             for (const type in initialRows) {
-                for (let i = 0; i < initialRows[type]; i++) {
-                    const list = document.getElementById(`${type}-list`);
-                    if(list) list.appendChild(createRow(type));
-                }
+                const list = document.getElementById(`${type}-list`);
+                if(list) list.appendChild(createRow(type));
             }
-
-            // Event Delegation for adding/removing items and auto-calculation
+            
             document.querySelector('.container').addEventListener('click', (e) => {
                 if (e.target.classList.contains('add-item-btn')) {
                     const type = e.target.dataset.type;
@@ -382,7 +389,6 @@
                 }
             });
 
-            // Tab Navigation
             document.querySelector('.tabs').addEventListener('click', e => {
                 if (e.target.classList.contains('tab-button')) {
                     document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
@@ -392,7 +398,6 @@
                 }
             });
 
-            // Main "Calculate" button listeners
             document.querySelectorAll('.action-button[data-calc]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const type = btn.dataset.calc;
@@ -428,7 +433,6 @@
             container.querySelector('#hpp-res-total').textContent = formatRupiah(totalHpp);
             container.querySelector('#hpp-res-unit').textContent = formatRupiah(hppPerUnit);
             
-            // Auto-fill other tabs
             document.getElementById('lr-hpp').value = totalHpp;
 
             if (hppChart) hppChart.destroy();
@@ -460,7 +464,7 @@
             if (lrChart) lrChart.destroy();
             lrChart = new Chart(document.getElementById('lrChart'), {
                 type: 'bar', data: { labels: ['Pendapatan', 'Laba Kotor', 'Laba Bersih'], datasets: [{ label: 'Ringkasan Laba', data: [totalPendapatan, labaKotor, labaBersih], backgroundColor: ['#28a745', '#ffc107', '#007bff'] }] },
-                options: { responsive: true, plugins: { legend: { display: false } } }
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
             });
         };
         
@@ -474,7 +478,7 @@
             
             container.querySelector('.report-date-neraca').textContent = `Per Tanggal: ${formatDate(document.getElementById('neraca-tanggal').value)}`;
             const statusDiv = container.querySelector('#neraca-res-status');
-            if (totalAset === totalLiabilitasEkuitas && totalAset > 0) {
+            if (Math.round(totalAset) === Math.round(totalLiabilitasEkuitas) && totalAset > 0) {
                 statusDiv.textContent = "SEIMBANG (BALANCE)";
                 statusDiv.className = "balance-status seimbang";
             } else {
@@ -488,15 +492,15 @@
             neracaChart = new Chart(document.getElementById('neracaChart'), {
                 type: 'bar',
                 data: {
-                    labels: [''],
+                    labels: ['Aset', 'Liabilitas & Ekuitas'],
                     datasets: [
-                        { label: 'Aset Lancar', data: [totalAsetLancar], backgroundColor: '#007bff' },
-                        { label: 'Aset Tetap', data: [totalAsetTetap], backgroundColor: '#0056b3' },
-                        { label: 'Liabilitas', data: [-totalLiabilitas], backgroundColor: '#dc3545' },
-                        { label: 'Ekuitas', data: [-totalEkuitas], backgroundColor: '#ffc107' }
+                        { label: 'Aset Lancar', data: [totalAsetLancar, 0], backgroundColor: '#007bff', stack: 'Aset' },
+                        { label: 'Aset Tetap', data: [totalAsetTetap, 0], backgroundColor: '#0056b3', stack: 'Aset' },
+                        { label: 'Liabilitas', data: [0, totalLiabilitas], backgroundColor: '#dc3545', stack: 'LiabilitasEkuitas' },
+                        { label: 'Ekuitas', data: [0, totalEkuitas], backgroundColor: '#ffc107', stack: 'LiabilitasEkuitas' }
                     ]
                 },
-                options: { indexAxis: 'y', responsive: true, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'top' } } }
+                options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'top' } } }
             });
         };
 
