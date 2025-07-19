@@ -49,10 +49,13 @@
         .item-row:last-child { border-bottom: none; }
         .item-row input { background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px; border-radius: 8px; font-size: 0.9rem; outline: none; transition: all 0.3s ease; }
         .item-row input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); }
+        
         .item-row .input-nama { flex: 3; min-width: 150px; }
-        .item-row .input-jumlah { flex: 1; min-width: 80px; }
+        .item-row .input-jumlah { flex: 1; min-width: 60px; }
+        .item-row .input-unit { flex: 1; min-width: 60px; }
         .item-row .input-harga { flex: 2; min-width: 120px; }
         .item-row .subtotal { flex: 2; min-width: 130px; font-weight: 600; color: var(--subtle-text-color); }
+
         .remove-item-btn { background-color: #f8d7da; color: var(--danger-color); border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.2s ease; }
         .remove-item-btn:hover { background-color: var(--danger-color); color: white; }
         .add-item-btn { background-color: #e2e6ea; color: var(--subtle-text-color); border: 1px dashed var(--border-color); padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 15px; transition: all 0.2s ease; }
@@ -171,6 +174,7 @@
             </div>
         </div>
 
+        <!-- Sisa HTML tetap sama -->
         <!-- Kalkulator Laba Rugi -->
         <div id="laba-rugi" class="calculator-content">
             <div class="card">
@@ -355,40 +359,58 @@
         const getInputValue = (id) => parseFloat(document.getElementById(id).value) || 0;
         const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Tidak Diisi';
 
-        // --- DYNAMIC ROW CREATION ---
+        // --- PERUBAHAN JAVASCRIPT: Menambahkan jumlah dan harga satuan untuk Tenaga Kerja ---
         const createRow = (type) => {
             const row = document.createElement('div');
             row.className = 'item-row';
             let innerHTML = '';
             
             const placeholders = {
-                'tenaga-kerja': 'cth: Gaji Operator', 'overhead': 'cth: Listrik Pabrik', 'pendapatan': 'cth: Penjualan Produk A',
-                'operasional': 'cth: Gaji Admin', 'aset-lancar': 'cth: Kas', 'aset-tetap': 'cth: Mesin Produksi',
-                'liabilitas': 'cth: Utang Bank', 'ekuitas': 'cth: Modal Disetor',
+                // 'tenaga-kerja' dihapus dari sini karena akan ditangani secara khusus
+                'pendapatan': 'cth: Penjualan Produk A', 'operasional': 'cth: Gaji Admin', 'aset-lancar': 'cth: Kas', 
+                'aset-tetap': 'cth: Mesin Produksi', 'liabilitas': 'cth: Utang Bank', 'ekuitas': 'cth: Modal Disetor',
                 'kas-masuk': 'cth: Penjualan tunai', 'kas-keluar': 'cth: Bayar sewa, listrik'
             };
-
-            if (type === 'bahan-baku') {
-                innerHTML = `<input type="text" placeholder="Nama Bahan Baku" class="input-nama"><input type="number" placeholder="Jml" class="input-jumlah" value="1"><input type="number" placeholder="Harga Satuan" class="input-harga"><span class="subtotal">Rp 0</span>`;
-            } else if (placeholders[type]) {
+            
+            // Tipe 1: Bahan Baku & Overhead (dengan kolom unit)
+            if (type === 'bahan-baku' || type === 'overhead') {
+                const namePlaceholder = type === 'bahan-baku' ? 'Nama Bahan Baku' : 'Nama Biaya Overhead';
+                innerHTML = `<input type="text" placeholder="${namePlaceholder}" class="input-nama">
+                             <input type="number" placeholder="Jml" class="input-jumlah" value="1">
+                             <input type="text" placeholder="Unit" class="input-unit">
+                             <input type="number" placeholder="Harga per Unit" class="input-harga">
+                             <span class="subtotal">Rp 0</span>`;
+            } 
+            // Tipe 2: Tenaga Kerja (dengan jumlah orang & upah per orang)
+            else if (type === 'tenaga-kerja') {
+                innerHTML = `<input type="text" placeholder="cth: Gaji Operator" class="input-nama">
+                             <input type="number" placeholder="Jml Org" class="input-jumlah" value="1">
+                             <input type="number" placeholder="Upah per Orang (Rp)" class="input-harga">
+                             <span class="subtotal">Rp 0</span>`;
+            }
+            // Tipe 3: Semua tipe lain yang lebih sederhana
+            else if (placeholders[type]) { 
                 innerHTML = `<input type="text" placeholder="${placeholders[type]}" class="input-nama"><input type="number" placeholder="Jumlah (Rp)" class="input-harga">`;
             }
 
             row.innerHTML = `${innerHTML}<button class="remove-item-btn">×</button>`;
             return row;
         };
+        // --- END PERUBAHAN JAVASCRIPT ---
 
         // --- AUTO-CALCULATION LOGIC ---
+        // Tidak perlu diubah, sudah cukup fleksibel
         const calculateTotals = (containerId) => {
             let total = 0;
             document.querySelectorAll(`#${containerId} .item-row`).forEach(row => {
                 const hargaInput = row.querySelector('.input-harga');
                 const jumlahInput = row.querySelector('.input-jumlah');
-                if (jumlahInput) { // For HPP Bahan Baku
+                
+                if (jumlahInput) { 
                     const subtotal = (parseFloat(jumlahInput.value) || 0) * (parseFloat(hargaInput.value) || 0);
                     row.querySelector('.subtotal').textContent = formatRupiah(subtotal);
                     total += subtotal;
-                } else { // For all other simple rows
+                } else {
                     total += parseFloat(hargaInput.value) || 0;
                 }
             });
@@ -398,12 +420,11 @@
             return total;
         };
         
-        // --- INITIALIZATION ---
+        // --- INITIALIZATION (Tidak perlu diubah) ---
         const init = () => {
             const today = new Date().toISOString().split('T')[0];
             document.querySelectorAll('input[type="date"]').forEach(input => input.value = today);
 
-            // Add initial rows
             const initialRows = {
                 'bahan-baku': 1, 'tenaga-kerja': 1, 'overhead': 1, 'pendapatan': 1, 'operasional': 1, 
                 'aset-lancar': 1, 'aset-tetap': 1, 'liabilitas': 1, 'ekuitas': 1,
@@ -416,7 +437,6 @@
                 }
             }
 
-            // Event Delegation for adding/removing items and auto-calculation
             document.querySelector('.container').addEventListener('click', (e) => {
                 if (e.target.classList.contains('add-item-btn')) {
                     const type = e.target.dataset.type;
@@ -436,7 +456,6 @@
                 }
             });
 
-            // Tab Navigation
             document.querySelector('.tabs').addEventListener('click', e => {
                 if (e.target.classList.contains('tab-button')) {
                     document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
@@ -446,7 +465,6 @@
                 }
             });
 
-            // Main "Calculate" button listeners
             document.querySelectorAll('.action-button[data-calc]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const type = btn.dataset.calc;
@@ -460,14 +478,13 @@
                     if (type === 'neraca') handleCalculateNeraca(reportContainer);
                     if (type === 'ak') handleCalculateAK(reportContainer);
 
-
                     reportContainer.style.display = 'block';
                     reportContainer.scrollIntoView({ behavior: 'smooth' });
                 });
             });
         };
 
-        // --- CALCULATION HANDLERS ---
+        // --- CALCULATION HANDLERS (Tidak perlu diubah) ---
         const handleCalculateHPP = (container) => {
             const totalBahanBaku = calculateTotals('bahan-baku-list');
             const totalTenagaKerja = calculateTotals('tenaga-kerja-list');
